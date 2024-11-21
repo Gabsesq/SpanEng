@@ -1,0 +1,3 @@
+- can click on words to save for later, so save a checklist of words you want
+    to learn later and the chatbot will keep bringing them up and potentially 
+    highlighting them?

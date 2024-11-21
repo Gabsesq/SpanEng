@@ -4,12 +4,15 @@ from google.cloud import speech, texttospeech
 import os
 import tempfile
 from dotenv import load_dotenv
+from flask import Blueprint, request, jsonify, send_file
+
 
 main = Blueprint('main', __name__)
 
 # Initialize OpenAI API key
 load_dotenv() 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:\\Users\\gabby\\OneDrive\\Desktop\\SpanEng\\SpanEng\\spaneng-c26d4e863c99.json"
 
 # Speech-to-Text function
 def transcribe_audio(audio_path):
@@ -22,11 +25,20 @@ def transcribe_audio(audio_path):
     return " ".join(result.alternatives[0].transcript for result in response.results)
 
 
-def synthesize_text(text, output_path="output.mp3"):
+def synthesize_text(text, output_path=None):
+    if output_path is None:
+        # Save the file in the 'app' folder
+        app_folder = os.path.dirname(os.path.abspath(__file__))  # Path to the current file (routes.py)
+        output_path = os.path.join(app_folder, "output.mp3")
+    print(f"Generating audio at: {output_path}")
+
     client = texttospeech.TextToSpeechClient()
 
     synthesis_input = texttospeech.SynthesisInput(text=text)
-    voice = texttospeech.VoiceSelectionParams(language_code="es-ES", ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL)
+    voice = texttospeech.VoiceSelectionParams(
+        language_code="es-ES",
+        ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
+    )
     audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3)
 
     response = client.synthesize_speech(
@@ -37,10 +49,7 @@ def synthesize_text(text, output_path="output.mp3"):
 
     with open(output_path, "wb") as out:
         out.write(response.audio_content)
-    print(f"Audio content written to {output_path}")
-
-# Example usage:
-synthesize_text("¡Hola! ¿Cómo estás?")
+    print(f"Audio content successfully written to {output_path}")
 
 def chat_with_gpt(prompt):
     response = openai.ChatCompletion.create(
@@ -96,3 +105,35 @@ def chat():
     except Exception as e:
         print("Error during GPT processing:", e)  # Log any errors
         return jsonify({"error": str(e)}), 500
+
+@main.route('/synthesize', methods=['POST'])
+def synthesize():
+    data = request.get_json()
+    if not data or 'text' not in data:
+        return jsonify({"error": "No text provided"}), 400
+
+    text = data['text']
+
+    try:
+        # Synthesize text to speech
+        client = texttospeech.TextToSpeechClient()
+
+        synthesis_input = texttospeech.SynthesisInput(text=text)
+        voice = texttospeech.VoiceSelectionParams(
+            language_code="es-ES",
+            ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
+        )
+        audio_config = texttospeech.AudioConfig(audio_encoding=texttospeech.AudioEncoding.MP3)
+
+        response = client.synthesize_speech(
+            input=synthesis_input,
+            voice=voice,
+            audio_config=audio_config
+        )
+
+        # Return the audio content directly
+        return response.audio_content, 200, {'Content-Type': 'audio/mpeg'}
+    except Exception as e:
+        print("Error in /synthesize route:", e)
+        return jsonify({"error": str(e)}), 500
+
