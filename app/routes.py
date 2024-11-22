@@ -14,6 +14,9 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:\\Users\\gabby\\OneDrive\\Desktop\\SpanEng\\SpanEng\\spaneng-c26d4e863c99.json"
 
+conversation_history = [
+    {"role": "system", "content": "You are a helpful Spanish-speaking assistant. Avoid repeating questions and be creative in your responses."}
+]
 # Speech-to-Text function
 def transcribe_audio(audio_path):
     client = speech.SpeechClient()
@@ -86,25 +89,39 @@ def process_audio():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-# Route: Chat with GPT
 @main.route('/chat', methods=['POST'])
 def chat():
-    data = request.get_json()
-    print("Incoming request:", data)  # Log incoming request
+    global conversation_history
 
-    if not data or 'message' not in data:
+    # Get the user message from the request
+    data = request.get_json()
+    user_message = data.get('message', '')
+
+    print(f"Received message: {user_message}")  # Debugging log
+
+    if not user_message:
         return jsonify({"error": "No message provided"}), 400
 
-    user_message = data['message']
-    print("User message:", user_message)  # Log the user message
+    # Add the user's message to the conversation history
+    conversation_history.append({"role": "user", "content": user_message})
 
     try:
-        response = chat_with_gpt(user_message)
-        print("GPT response:", response)  # Log the GPT response
-        return jsonify({"reply": response})
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=conversation_history,
+            temperature=0.7
+        )
+        assistant_message = response['choices'][0]['message']['content']
+
+        # Add ChatGPT's reply to the conversation history
+        conversation_history.append({"role": "assistant", "content": assistant_message})
+
+        print(f"ChatGPT response: {assistant_message}")  # Debugging log
+        return jsonify({"reply": assistant_message})
     except Exception as e:
-        print("Error during GPT processing:", e)  # Log any errors
+        print(f"Error during ChatGPT processing: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @main.route('/synthesize', methods=['POST'])
 def synthesize():
