@@ -1,17 +1,21 @@
 import React, { useState, useRef } from "react";
 import "./App.css";
+import Navbar from "./components/Navbar";
+
+
 
 const App = () => {
   const [recording, setRecording] = useState(false);
   const [responseText, setResponseText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [view, setView] = useState("main");
   const recognitionRef = useRef(null);
   let finalTranscript = ""; // Local variable to store the transcript
 
   const handleToggleRecording = async () => {
     if (isProcessing) {
       console.log("Processing is still ongoing. Try again later.");
-      return; // Prevent new interactions during processing
+      return;
     }
 
     if (!recording) {
@@ -24,16 +28,16 @@ const App = () => {
 
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
-      recognition.lang = "es-ES"; // Set language to Spanish
-      recognition.interimResults = false; // Only process final results
+      recognition.lang = "es-ES";
+      recognition.interimResults = false;
 
       recognition.onstart = () => {
         console.log("Speech recognition started");
-        finalTranscript = ""; // Clear the local transcript variable
+        finalTranscript = "";
       };
 
       recognition.onresult = (event) => {
-        finalTranscript = event.results[0][0].transcript; // Update the local transcript
+        finalTranscript = event.results[0][0].transcript;
         console.log("Final Transcript:", finalTranscript);
       };
 
@@ -48,7 +52,6 @@ const App = () => {
         console.log("Sending transcript to OpenAI:", finalTranscript);
         setIsProcessing(true);
         try {
-          // Get AI response
           const aiResponse = await fetch("/api/generate-response", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -58,7 +61,6 @@ const App = () => {
           console.log("AI Response:", aiData.response);
           setResponseText(aiData.response);
 
-          // Get the TTS audio for the response
           const ttsResponse = await fetch("/api/text-to-speech", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -90,43 +92,105 @@ const App = () => {
     }
   };
 
-  const handleSaveHighlight = () => {
+  const handleSaveHighlight = async () => {
     const selectedText = window.getSelection().toString().trim();
     if (!selectedText) {
       alert("Please highlight a word or phrase to save.");
       return;
     }
-
-    const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
-    if (!savedHighlights.includes(selectedText)) {
-      savedHighlights.push(selectedText);
+  
+    try {
+      // Request English translation from the backend
+      const translationResponse = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word: selectedText }),
+      });
+  
+      const translationData = await translationResponse.json();
+      const englishTranslation = translationData.translation;
+  
+      // Save as an object: { word, translation }
+      const savedHighlights =
+        JSON.parse(localStorage.getItem("highlights")) || [];
+      const newEntry = { word: selectedText, translation: englishTranslation };
+  
+      savedHighlights.push(newEntry);
       localStorage.setItem("highlights", JSON.stringify(savedHighlights));
-      alert(`Saved: "${selectedText}"`);
-    } else {
-      alert(`"${selectedText}" is already saved.`);
+      alert(`Saved: "${selectedText} - ${englishTranslation}"`);
+    } catch (error) {
+      console.error("Error fetching translation:", error);
+      alert("Failed to save the word. Please try again.");
     }
   };
+  
+  const handleDeleteHighlight = (word) => {
+    const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
+    const updatedHighlights = savedHighlights.filter(
+      (item) => item.word !== word
+    );
+    localStorage.setItem("highlights", JSON.stringify(updatedHighlights));
+    alert(`Deleted: "${word}"`);
+  };
+  
+  const renderSavedWords = () => {
+    const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
+    if (savedHighlights.length === 0) {
+      return <p className="saved-words-text">No saved words or phrases.</p>;
+    }
+  
+    return (
+      <ul className="saved-words-list">
+        {savedHighlights.map((entry, index) => (
+          <li key={index} className="saved-words-item">
+            {entry.word} - {entry.translation}{" "}
+            <button
+              className="delete-button"
+              onClick={() => handleDeleteHighlight(entry.word)}
+            >
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+  
+  
+  
+  
 
   return (
     <div>
-      <h1>¡Hablame!</h1>
-      <div className="button-container">
-        <button onClick={handleToggleRecording} disabled={isProcessing}>
-          {recording ? "Stop Listening" : "Start Speaking"}
-        </button>
-      </div>
-      <div className="textarea">
-        {responseText && (
-          <div>
-            <p>
-              <strong>Response:</strong> {responseText}
-            </p>
-            <button onClick={handleSaveHighlight}>Save Highlight</button>
+      <Navbar currentView={view} setView={setView} />
+      <h1>¡Hablame!</h1> {/* Re-added header */}
+      {view === "main" ? (
+        <div>
+          <div className="button-container">
+            <button onClick={handleToggleRecording} disabled={isProcessing}>
+              {recording ? "Stop Listening" : "Start Speaking"}
+            </button>
           </div>
-        )}
-      </div>
+          <div className="textarea">
+            {responseText && (
+              <div>
+                <p>
+                  <strong>Response:</strong> {responseText}
+                </p>
+                <button onClick={handleSaveHighlight}>Save Highlight</button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <h2>Saved Words</h2>
+          {renderSavedWords()}
+        </div>
+      )}
     </div>
   );
+  
 };
 
 export default App;

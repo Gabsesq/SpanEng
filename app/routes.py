@@ -70,3 +70,22 @@ def text_to_speech():
     audio_base64 = base64.b64encode(response.audio_content).decode('utf-8')
 
     return jsonify({"audioContent": audio_base64})
+
+@main.route("/api/translate", methods=["POST"])
+def translate():
+    data = request.get_json()
+    word = data["word"]
+
+    # Query OpenAI for a clean, minimal translation
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a translation assistant. Provide only the translation of the given Spanish word into English, without any additional context, formatting, or punctuation."},
+            {"role": "user", "content": f'Translate "{word}" into English.'},
+        ],
+        max_tokens=10,
+    )
+
+    translation = completion.choices[0].message['content'].strip()
+    return jsonify({"translation": translation})
+

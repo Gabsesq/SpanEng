@@ -21,6 +21,17 @@ h1 {
   margin-top: 5% !important;
   font-size:50px !important;
 }
+
+h2 {
+  font-family: 'HappyMonday5', bold; /* Use the custom font */
+  text-align: left;
+  color: #393127;
+  margin-top: 5% !important;
+  margin-bottom:2%;
+  margin-left: 5%;
+  font-size:30px !important;
+}
+
 p {
   font-family: 'HappyMonday5', bold; /* Use the custom font */
   text-align: left;
@@ -58,3 +69,87 @@ button:hover {
   padding: 10px;
 }
 
+
+
+
+
+
+/* Apply font to the saved words list */
+.saved-words-list {
+  font-family: Arial, sans-serif; /* Match navbar font */
+  font-size: 16px; /* Adjust font size as needed */
+  color: #333; /* Optional: Match text color */
+  padding: 0;
+  list-style-type: none; /* Remove default bullet points */
+  margin-left: 5%;
+}
+.saved-words-item {
+  margin-top: 1%;
+  font-weight: bold; /* Optional: Match navbar weight */
+}
+
+/* Optional: Style for the 'Delete' button */
+.delete-button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; /* Match navbar font */
+  font-size: 14px;
+  background-color: #ffffff;
+  color: rgb(32, 35, 39);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #cdb698; /* Slightly darker red on hover */
+}
+
+/* Style for empty saved words message */
+.saved-words-text {
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+}
+
+
+
+
+
+
+
+
+
+
+.navbar {
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.navbar ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar li {
+  margin: 0 1rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  color: white;
+  font-weight: bold;
+  border-radius: 4px;
+}
+
+.navbar li.active {
+  color: white;
+}
+
+.navbar li:hover {
+  background-color: #cdb698;
+}
