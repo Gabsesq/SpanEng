@@ -1,0 +1,60 @@
+/* App.css */
+@font-face {
+  font-family: 'HappyMonday5';
+  src: url('./assets/fonts/Voltaire-Frangela.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background-color: #c2a887 !important; /* This should now apply */
+  color: #333;
+  
+}
+
+h1 {
+  font-family: 'HappyMonday5', bold; /* Use the custom font */
+  text-align: center;
+  color: #1f252c;
+  margin-top: 5% !important;
+  font-size:50px !important;
+}
+p {
+  font-family: 'HappyMonday5', bold; /* Use the custom font */
+  text-align: left;
+  color: #071524;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center; /* Centers the button horizontally */
+  margin-top: 2%;
+  margin-bottom: 3%;
+}
+
+button {
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 5px;
+
+}
+
+button:hover {
+  background-color: #fff1e2;
+}
+
+.textarea {
+  width: 80%;
+  height: 100px;
+  margin: 4% auto;
+  display: block;
+  font-size: 20px;
+  padding: 10px;
+}
+
