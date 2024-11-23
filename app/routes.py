@@ -35,10 +35,11 @@ def generate_response():
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",  # Updated model
         messages=[
-            {"role": "system", "content": "You are a helpful assistant who responds in Spanish."},
+            {"role": "system", "content": "You are a helpful assistant who responds in Spanish. you ask crazy questions and keep the conversation engaging."},
             {"role": "user", "content": user_input}
         ],
-        max_tokens=150
+        max_tokens=150,
+        temperature=0.9
     )
 
     response_text = completion.choices[0].message['content'].strip()
