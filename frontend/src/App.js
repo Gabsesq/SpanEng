@@ -2,10 +2,9 @@ import React, { useState, useRef } from "react";
 import "./App.css";
 import Navbar from "./components/Navbar";
 
-
-
 const App = () => {
   const [recording, setRecording] = useState(false);
+  const [inputText, setInputText] = useState(""); // Added state for Input
   const [responseText, setResponseText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [view, setView] = useState("main");
@@ -15,7 +14,7 @@ const App = () => {
   const handleToggleRecording = async () => {
     if (isProcessing) {
       console.log("Processing is still ongoing. Try again later.");
-      return;
+      return; // Prevent new interactions during processing
     }
 
     if (!recording) {
@@ -28,17 +27,19 @@ const App = () => {
 
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
-      recognition.lang = "es-ES";
+      recognition.lang = "es-ES"; // Set language to Spanish
       recognition.interimResults = false;
 
       recognition.onstart = () => {
         console.log("Speech recognition started");
-        finalTranscript = "";
+        finalTranscript = ""; // Clear local variable
+        setInputText(""); // Clear UI for Input section
       };
 
       recognition.onresult = (event) => {
         finalTranscript = event.results[0][0].transcript;
         console.log("Final Transcript:", finalTranscript);
+        setInputText(finalTranscript); // Update the Input UI
       };
 
       recognition.onend = async () => {
@@ -51,7 +52,9 @@ const App = () => {
 
         console.log("Sending transcript to OpenAI:", finalTranscript);
         setIsProcessing(true);
+
         try {
+          // Fetch AI Response
           const aiResponse = await fetch("/api/generate-response", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -61,6 +64,7 @@ const App = () => {
           console.log("AI Response:", aiData.response);
           setResponseText(aiData.response);
 
+          // Fetch TTS Response
           const ttsResponse = await fetch("/api/text-to-speech", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -98,7 +102,7 @@ const App = () => {
       alert("Please highlight a word or phrase to save.");
       return;
     }
-  
+
     try {
       // Request English translation from the backend
       const translationResponse = await fetch("/api/translate", {
@@ -106,15 +110,15 @@ const App = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ word: selectedText }),
       });
-  
+
       const translationData = await translationResponse.json();
       const englishTranslation = translationData.translation;
-  
+
       // Save as an object: { word, translation }
       const savedHighlights =
         JSON.parse(localStorage.getItem("highlights")) || [];
       const newEntry = { word: selectedText, translation: englishTranslation };
-  
+
       savedHighlights.push(newEntry);
       localStorage.setItem("highlights", JSON.stringify(savedHighlights));
       alert(`Saved: "${selectedText} - ${englishTranslation}"`);
@@ -123,7 +127,7 @@ const App = () => {
       alert("Failed to save the word. Please try again.");
     }
   };
-  
+
   const handleDeleteHighlight = (word) => {
     const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
     const updatedHighlights = savedHighlights.filter(
@@ -132,13 +136,13 @@ const App = () => {
     localStorage.setItem("highlights", JSON.stringify(updatedHighlights));
     alert(`Deleted: "${word}"`);
   };
-  
+
   const renderSavedWords = () => {
     const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
     if (savedHighlights.length === 0) {
       return <p className="saved-words-text">No saved words or phrases.</p>;
     }
-  
+
     return (
       <ul className="saved-words-list">
         {savedHighlights.map((entry, index) => (
@@ -155,15 +159,11 @@ const App = () => {
       </ul>
     );
   };
-  
-  
-  
-  
 
   return (
     <div>
       <Navbar currentView={view} setView={setView} />
-      <h1>¡Hablame!</h1> {/* Re-added header */}
+      <h1>¡Hablame!</h1>
       {view === "main" ? (
         <div>
           <div className="button-container">
@@ -172,15 +172,18 @@ const App = () => {
             </button>
           </div>
           <div className="textarea">
-            {responseText && (
-              <div>
-                <p>
-                  <strong>Response:</strong> {responseText}
-                </p>
-                <button onClick={handleSaveHighlight}>Save Highlight</button>
-              </div>
-            )}
+            <p>
+              <strong>Input:</strong> {inputText}
+            </p>
+            <p>
+              <strong>Response:</strong> {responseText}
+            </p>
           </div>
+          {responseText && (
+            <div className="button-container">
+              <button onClick={handleSaveHighlight}>Save Highlight</button>
+            </div>
+          )}
         </div>
       ) : (
         <div>
@@ -190,7 +193,6 @@ const App = () => {
       )}
     </div>
   );
-  
 };
 
 export default App;
