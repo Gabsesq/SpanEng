@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import './App.css';
+import "./App.css";
 
 const App = () => {
   const [recording, setRecording] = useState(false);
@@ -90,6 +90,23 @@ const App = () => {
     }
   };
 
+  const handleSaveHighlight = () => {
+    const selectedText = window.getSelection().toString().trim();
+    if (!selectedText) {
+      alert("Please highlight a word or phrase to save.");
+      return;
+    }
+
+    const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
+    if (!savedHighlights.includes(selectedText)) {
+      savedHighlights.push(selectedText);
+      localStorage.setItem("highlights", JSON.stringify(savedHighlights));
+      alert(`Saved: "${selectedText}"`);
+    } else {
+      alert(`"${selectedText}" is already saved.`);
+    }
+  };
+
   return (
     <div>
       <h1>¡Hablame!</h1>
@@ -99,7 +116,14 @@ const App = () => {
         </button>
       </div>
       <div className="textarea">
-        {responseText && <p><strong>AI Response:</strong> {responseText}</p>}
+        {responseText && (
+          <div>
+            <p>
+              <strong>Response:</strong> {responseText}
+            </p>
+            <button onClick={handleSaveHighlight}>Save Highlight</button>
+          </div>
+        )}
       </div>
     </div>
   );
