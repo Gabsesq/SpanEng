@@ -330,7 +330,3 @@ def generate_vocabulary():
         print(f"Vocabulary generation error: {str(e)}")
         return jsonify({"error": f"Vocabulary generation failed: {str(e)}"}), 500
 
-@main.route("/")
-def serve():
-    return jsonify({"message": "API is running"}), 200
-
