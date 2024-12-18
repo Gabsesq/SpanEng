@@ -153,3 +153,95 @@ button:hover {
 .navbar li:hover {
   background-color: #cdb698;
 }
+
+.button-container button {
+  padding: 15px 30px;
+  font-size: 1.2em;
+  border-radius: 25px;
+  border: none;
+  background-color: #f44336;  /* Default red color */
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  animation: blink 2s infinite;  /* Add blinking animation */
+}
+
+/* Add blinking animation */
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.button-container button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  animation: none;  /* No blinking when disabled */
+}
+
+.button-container button.recording {
+  background-color: #f44336;
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(244, 67, 54, 0.5);
+  animation: none;  /* No blinking when recording */
+  opacity: 1;  /* Ensure full opacity when recording */
+}
+
+.button-container button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Optional: Add a pulsing effect when recording */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+}
+
+.button-container button.recording {
+  background-color: #f44336;
+  transform: scale(1.1);
+  animation: pulse 2s infinite;
+  opacity: 1;
+}
+
+/* Style for the highlight button */
+.highlight-button {
+  background-color: #ffeb3b;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  border-radius: 5px;
+  font-family: 'HappyMonday5', bold;
+  color: #333;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.highlight-button:hover {
+  transform: scale(1.1);
+  background-color: #ffd700;
+}
+
+.highlight-button.active {
+  background-color: #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+/* Yellow highlight effect for selected text */
+.highlighting ::selection {
+  background-color: #ffeb3b;
+  color: black;
+}
+
+.highlighting ::-moz-selection {
+  background-color: #ffeb3b;
+  color: black;
+}

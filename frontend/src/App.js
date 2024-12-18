@@ -1,50 +1,72 @@
 import React, { useState, useRef } from "react";
 import "./App.css";
 import Navbar from "./components/Navbar";
+import JournalEntry from './components/JournalEntry';
+import GrammarWorksheet from './components/GrammarWorksheet';
+import VocabularyGenerator from './components/VocabularyGenerator';
 
 const App = () => {
   const [recording, setRecording] = useState(false);
-  const [inputText, setInputText] = useState(""); // Added state for Input
+  const [inputText, setInputText] = useState("");
   const [responseText, setResponseText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [view, setView] = useState("main");
   const recognitionRef = useRef(null);
-  let finalTranscript = ""; // Local variable to store the transcript
+  let finalTranscript = "";
+  const [isHighlighting, setIsHighlighting] = useState(false);
 
-  const handleToggleRecording = async () => {
+  const startRecording = async (e) => {
+    e.preventDefault();
+    
     if (isProcessing) {
       console.log("Processing is still ongoing. Try again later.");
-      return; // Prevent new interactions during processing
+      return;
     }
 
-    if (!recording) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Speech Recognition is not supported in this browser.");
-        return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech Recognition is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = "es-ES";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onstart = () => {
+      console.log("Speech recognition started");
+      finalTranscript = "";
+      setInputText("");
+      setRecording(true);
+    };
+
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      finalTranscript = '';
+
+      // Combine all results
+      for (let i = 0; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
       }
 
-      const recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
-      recognition.lang = "es-ES"; // Set language to Spanish
-      recognition.interimResults = false;
+      // Update the input text with both final and interim results
+      const displayText = finalTranscript + interimTranscript;
+      console.log("Current Transcript:", displayText);
+      setInputText(displayText);
+    };
 
-      recognition.onstart = () => {
-        console.log("Speech recognition started");
-        finalTranscript = ""; // Clear local variable
-        setInputText(""); // Clear UI for Input section
-      };
-
-      recognition.onresult = (event) => {
-        finalTranscript = event.results[0][0].transcript;
-        console.log("Final Transcript:", finalTranscript);
-        setInputText(finalTranscript); // Update the Input UI
-      };
-
-      recognition.onend = async () => {
-        console.log("Speech recognition ended");
-
+    recognition.onend = async () => {
+      console.log("Speech recognition ended");
+      
+      // Only process if we're not still recording (button still held)
+      if (!recording) {
         if (finalTranscript.trim() === "") {
           console.log("No transcript available to process.");
           return;
@@ -57,9 +79,17 @@ const App = () => {
           // Fetch AI Response
           const aiResponse = await fetch("/api/generate-response", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
             body: JSON.stringify({ text: finalTranscript }),
           });
+          
+          if (!aiResponse.ok) {
+            throw new Error(`AI Response failed: ${aiResponse.status}`);
+          }
+          
           const aiData = await aiResponse.json();
           console.log("AI Response:", aiData.response);
           setResponseText(aiData.response);
@@ -67,74 +97,121 @@ const App = () => {
           // Fetch TTS Response
           const ttsResponse = await fetch("/api/text-to-speech", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
             body: JSON.stringify({ text: aiData.response }),
           });
-          const ttsData = await ttsResponse.json();
 
-          console.log("Playing TTS audio.");
+          if (!ttsResponse.ok) {
+            const errorText = await ttsResponse.text();
+            throw new Error(`TTS failed: ${ttsResponse.status} - ${errorText}`);
+          }
+
+          const ttsData = await ttsResponse.json();
+          if (!ttsData.audioContent) {
+            throw new Error('No audio content received from TTS service');
+          }
+
+          console.log("Playing TTS audio");
           const audioBlob = new Blob(
             [Uint8Array.from(atob(ttsData.audioContent), (c) => c.charCodeAt(0))],
             { type: "audio/mp3" }
           );
           const audioBlobUrl = URL.createObjectURL(audioBlob);
           const audio = new Audio(audioBlobUrl);
-          audio.play();
+          await audio.play();
         } catch (error) {
           console.error("Error during processing:", error);
+        } finally {
+          setIsProcessing(false);
         }
-        setIsProcessing(false);
-      };
+      } else {
+        // If the button is still being held, restart recognition
+        try {
+          recognition.start();
+        } catch (error) {
+          console.error("Error restarting recognition:", error);
+        }
+      }
+    };
 
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+      if (event.error === 'no-speech') {
+        // If no speech is detected, but button is still held, restart recognition
+        if (recording) {
+          try {
+            recognition.stop();
+            recognition.start();
+          } catch (error) {
+            console.error("Error restarting recognition:", error);
+          }
+        }
+      }
+    };
+
+    try {
       recognition.start();
-      setRecording(true);
+    } catch (error) {
+      console.error("Error starting recognition:", error);
+    }
+  };
+
+  const stopRecording = () => {
+    setRecording(false);  // Set recording to false before stopping
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+  };
+
+  const toggleHighlightMode = () => {
+    setIsHighlighting(!isHighlighting);
+    if (!isHighlighting) {
+      document.body.classList.add('highlighting');
     } else {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        setRecording(false);
+      document.body.classList.remove('highlighting');
+    }
+  };
+
+  const handleMouseUp = async () => {
+    if (!isHighlighting) return;
+
+    const selectedText = window.getSelection().toString().trim();
+    if (selectedText) {
+      try {
+        // Request English translation from the backend
+        const translationResponse = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ word: selectedText }),
+        });
+
+        const translationData = await translationResponse.json();
+        const englishTranslation = translationData.translation;
+
+        // Save the highlight
+        const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
+        const newEntry = { word: selectedText, translation: englishTranslation };
+        savedHighlights.push(newEntry);
+        localStorage.setItem("highlights", JSON.stringify(savedHighlights));
+
+        // Clear the selection and exit highlight mode
+        window.getSelection().removeAllRanges();
+        setIsHighlighting(false);
+        document.body.classList.remove('highlighting');
+      } catch (error) {
+        console.error("Error saving highlight:", error);
       }
     }
   };
 
-  const handleSaveHighlight = async () => {
-    const selectedText = window.getSelection().toString().trim();
-    if (!selectedText) {
-      alert("Please highlight a word or phrase to save.");
-      return;
+  // Add mousedown handler to prevent exiting highlight mode when clicking to highlight
+  const handleMouseDown = (e) => {
+    if (isHighlighting) {
+      e.preventDefault(); // Prevents default text selection behavior
     }
-
-    try {
-      // Request English translation from the backend
-      const translationResponse = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word: selectedText }),
-      });
-
-      const translationData = await translationResponse.json();
-      const englishTranslation = translationData.translation;
-
-      // Save as an object: { word, translation }
-      const savedHighlights =
-        JSON.parse(localStorage.getItem("highlights")) || [];
-      const newEntry = { word: selectedText, translation: englishTranslation };
-
-      savedHighlights.push(newEntry);
-      localStorage.setItem("highlights", JSON.stringify(savedHighlights));
-      alert(`Saved: "${selectedText} - ${englishTranslation}"`);
-    } catch (error) {
-      console.error("Error fetching translation:", error);
-      alert("Failed to save the word. Please try again.");
-    }
-  };
-
-  const handleDeleteHighlight = (word) => {
-    const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
-    const updatedHighlights = savedHighlights.filter(
-      (item) => item.word !== word
-    );
-    localStorage.setItem("highlights", JSON.stringify(updatedHighlights));
-    alert(`Deleted: "${word}"`);
   };
 
   const renderSavedWords = () => {
@@ -160,15 +237,33 @@ const App = () => {
     );
   };
 
+  const handleDeleteHighlight = (word) => {
+    const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
+    const updatedHighlights = savedHighlights.filter(
+      (item) => item.word !== word
+    );
+    localStorage.setItem("highlights", JSON.stringify(updatedHighlights));
+    // Optional: Add a subtle notification instead of alert
+    console.log(`Deleted: "${word}"`);
+  };
+
   return (
-    <div>
+    <div onMouseUp={handleMouseUp} onMouseDown={handleMouseDown}>
       <Navbar currentView={view} setView={setView} />
       <h1>¡Hablame!</h1>
       {view === "main" ? (
         <div>
           <div className="button-container">
-            <button onClick={handleToggleRecording} disabled={isProcessing}>
-              {recording ? "Stop Listening" : "Start Speaking"}
+            <button 
+              onMouseDown={startRecording}
+              onMouseUp={stopRecording}
+              onMouseLeave={stopRecording}
+              onTouchStart={startRecording}
+              onTouchEnd={stopRecording}
+              disabled={isProcessing}
+              className={recording ? "recording" : ""}
+            >
+              {recording ? "Recording..." : "Hold to speak"}
             </button>
           </div>
           <div className="textarea">
@@ -180,16 +275,26 @@ const App = () => {
             </p>
           </div>
           {responseText && (
-            <div className="button-container">
-              <button onClick={handleSaveHighlight}>Save Highlight</button>
-            </div>
+            <button 
+              onClick={toggleHighlightMode}
+              className={`highlight-button ${isHighlighting ? 'active' : ''}`}
+              title={isHighlighting ? "Click to exit highlight mode" : "Click to highlight text"}
+            >
+              Highlight
+            </button>
           )}
         </div>
-      ) : (
+      ) : view === "saved" ? (
         <div>
           <h2>Saved Words</h2>
           {renderSavedWords()}
         </div>
+      ) : view === "journal" ? (
+        <JournalEntry />
+      ) : view === "worksheet" ? (
+        <GrammarWorksheet />
+      ) : view === "vocabulary" && (
+        <VocabularyGenerator />
       )}
     </div>
   );

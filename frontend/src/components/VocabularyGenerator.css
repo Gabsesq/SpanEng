@@ -1,0 +1,130 @@
+.vocabulary-generator {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.generator-controls {
+  margin-bottom: 30px;
+}
+
+.topic-input-section {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.topic-input {
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+}
+
+.generate-button, .random-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.generate-button {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.random-button {
+  background-color: #2196F3;
+  color: white;
+  width: 100%;
+}
+
+.generate-button:disabled, .random-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #f44336;
+  margin: 10px 0;
+  padding: 10px;
+  background-color: #ffebee;
+  border-radius: 4px;
+}
+
+.loading {
+  text-align: center;
+  color: #666;
+  margin: 20px 0;
+}
+
+.vocabulary-content {
+  background-color: #f5f5f5;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.topic-header {
+  margin-bottom: 20px;
+  color: #333;
+  text-transform: capitalize;
+}
+
+.vocabulary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.vocabulary-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.spanish-word {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #2196F3;
+}
+
+.word-type {
+  background-color: #e3f2fd;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  color: #1976d2;
+}
+
+.english-translation {
+  color: #666;
+  font-style: italic;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.example-section {
+  font-size: 0.9em;
+}
+
+.example {
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.example-translation {
+  color: #666;
+  font-style: italic;
+} 

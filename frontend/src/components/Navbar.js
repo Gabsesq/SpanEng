@@ -16,6 +16,24 @@ const Navbar = ({ currentView, setView }) => {
         >
           Saved Words
         </li>
+        <li
+          className={currentView === "journal" ? "active" : ""}
+          onClick={() => setView("journal")}
+        >
+          Journal
+        </li>
+        <li
+          className={currentView === "worksheet" ? "active" : ""}
+          onClick={() => setView("worksheet")}
+        >
+          Worksheet
+        </li>
+        <li
+          className={currentView === "vocabulary" ? "active" : ""}
+          onClick={() => setView("vocabulary")}
+        >
+          Vocabulary
+        </li>
       </ul>
     </nav>
   );
