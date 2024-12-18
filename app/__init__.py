@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 
 def create_app():
@@ -16,5 +16,13 @@ def create_app():
     # Import and register the blueprint
     from app.routes import main
     app.register_blueprint(main)
+
+    @app.route('/')
+    def serve():
+        return send_from_directory(app.static_folder, 'index.html')
+
+    @app.errorhandler(404)
+    def not_found(e):
+        return send_from_directory(app.static_folder, 'index.html')
 
     return app
