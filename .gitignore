@@ -3,3 +3,5 @@ venv/
 node_modules/
 spaneng-b52a55f79d90.json
 google_credentials_temp.json
+__pycache__/
+*.pyc
