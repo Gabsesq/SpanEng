@@ -56,6 +56,7 @@ const JournalEntry = () => {
       };
 
       recognition.onend = async () => {
+        console.log("Recognition ended, isRecording:", isRecording);
         if (isRecording) {
           try {
             recognition.start();
@@ -63,6 +64,7 @@ const JournalEntry = () => {
             console.error("Error restarting recognition:", error);
           }
         } else if (journalText.trim()) {
+          console.log("Processing final transcript:", journalText);
           await processJournalEntry(journalText);
         }
       };
@@ -77,25 +79,39 @@ const JournalEntry = () => {
   };
 
   const stopRecording = async () => {
+    console.log("Stopping recording...");
     setIsRecording(false);
 
     // Stop speech recognition
     if (recognitionRef.current) {
+      console.log("Stopping speech recognition");
       recognitionRef.current.stop();
     }
 
     // Stop video stream if it exists
     if (streamRef.current) {
+      console.log("Stopping video stream");
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
     }
+
+    // Process the journal entry if we have text
+    if (journalText.trim()) {
+      console.log("Processing journal text:", journalText);
+      await processJournalEntry(journalText);
+    } else {
+      console.log("No journal text to process");
+    }
   };
 
   const processJournalEntry = async (text) => {
-    if (!text.trim()) return;
+    if (!text.trim()) {
+      console.log("No text to process");
+      return;
+    }
 
     setIsProcessing(true);
     try {
@@ -111,16 +127,19 @@ const JournalEntry = () => {
       });
 
       console.log('Response status:', response.status);
+      const responseText = await response.text(); // Get raw response text
+      console.log('Raw response text:', responseText);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Response not OK:', errorData);
-        throw new Error(errorData.error || 'Failed to get suggestions');
+        throw new Error(`Failed to get suggestions: ${responseText}`);
       }
 
-      const data = await response.json();
-      console.log('Raw response data:', data);
-      console.log('Suggestions from response:', data.suggestions);
+      const data = JSON.parse(responseText); // Parse the response text
+      console.log('Parsed response data:', data);
+
+      if (!data.suggestions) {
+        throw new Error('No suggestions in response');
+      }
 
       const parsedSuggestions = JSON.parse(data.suggestions);
       console.log('Parsed suggestions:', parsedSuggestions);
@@ -133,6 +152,22 @@ const JournalEntry = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Add this helper function to highlight differences
+  const HighlightedText = ({ original, corrected }) => {
+    const changes = suggestions.changes || [];
+    let highlightedText = corrected;
+
+    // Replace each change with a highlighted version
+    changes.forEach(change => {
+      highlightedText = highlightedText.replace(
+        change.corrected,
+        `<span class="highlighted-correction" title="${change.explanation}">${change.corrected}</span>`
+      );
+    });
+
+    return <div dangerouslySetInnerHTML={{ __html: highlightedText }} />;
   };
 
   return (
@@ -180,8 +215,28 @@ const JournalEntry = () => {
             {isProcessing ? (
               <div className="processing">Processing your journal...</div>
             ) : suggestions ? (
-              console.log('Current suggestions state:', suggestions) ||
-              suggestions.corrected
+              <div>
+                <HighlightedText 
+                  original={suggestions.original} 
+                  corrected={suggestions.corrected} 
+                />
+                {suggestions.changes && suggestions.changes.length > 0 && (
+                  <div className="changes-explanation">
+                    <h4>Changes Explained:</h4>
+                    <ul>
+                      {suggestions.changes.map((change, index) => (
+                        <li key={index}>
+                          <span className="change-original">{change.original}</span>
+                          {" → "}
+                          <span className="change-corrected">{change.corrected}</span>
+                          <br />
+                          <span className="change-explanation">{change.explanation}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             ) : (
               "Corrections will appear here..."
             )}

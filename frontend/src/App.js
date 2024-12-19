@@ -65,7 +65,6 @@ const App = () => {
     recognition.onend = async () => {
       console.log("Speech recognition ended");
       
-      // Only process if we're not still recording (button still held)
       if (!recording) {
         if (finalTranscript.trim() === "") {
           console.log("No transcript available to process.");
@@ -76,24 +75,10 @@ const App = () => {
         setIsProcessing(true);
 
         try {
-          // Fetch AI Response
-          const aiResponse = await fetch("/api/generate-response", {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({ text: finalTranscript }),
-          });
+          const aiResponse = await generateResponse(finalTranscript);
+          console.log("AI Response:", aiResponse);
+          setResponseText(aiResponse);
           
-          if (!aiResponse.ok) {
-            throw new Error(`AI Response failed: ${aiResponse.status}`);
-          }
-          
-          const aiData = await aiResponse.json();
-          console.log("AI Response:", aiData.response);
-          setResponseText(aiData.response);
-
           // Fetch TTS Response
           const ttsResponse = await fetch("/api/text-to-speech", {
             method: "POST",
@@ -101,7 +86,7 @@ const App = () => {
               "Content-Type": "application/json",
               "Accept": "application/json"
             },
-            body: JSON.stringify({ text: aiData.response }),
+            body: JSON.stringify({ text: aiResponse }),
           });
 
           if (!ttsResponse.ok) {
@@ -128,7 +113,6 @@ const App = () => {
           setIsProcessing(false);
         }
       } else {
-        // If the button is still being held, restart recognition
         try {
           recognition.start();
         } catch (error) {
@@ -247,6 +231,28 @@ const App = () => {
     console.log(`Deleted: "${word}"`);
   };
 
+  const generateResponse = async (transcript) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/generate-response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: transcript }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI Response failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.response;
+    } catch (error) {
+      console.error('Error generating response:', error);
+      throw error;
+    }
+  };
+
   return (
     <div onMouseUp={handleMouseUp} onMouseDown={handleMouseDown}>
       <Navbar currentView={view} setView={setView} />
@@ -262,9 +268,8 @@ const App = () => {
               onTouchEnd={stopRecording}
               disabled={isProcessing}
               className={recording ? "recording" : ""}
-            >
-              {recording ? "Recording..." : "Hold to speak"}
-            </button>
+              aria-label={recording ? "Recording in progress" : "Hold to speak"}
+            />
           </div>
           <div className="textarea">
             <p>

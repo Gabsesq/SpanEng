@@ -77,7 +77,14 @@ def generate_response():
             return jsonify({"error": "No text field in JSON data"}), 400
 
         print(f"Received input: {user_input}")
+        
+        # Check if API key is available
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            print("OpenAI API key not found in environment variables")
+            return jsonify({"error": "OpenAI API key not configured"}), 500
 
+        print("Attempting OpenAI API call...")
         # Updated OpenAI API call
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -90,11 +97,11 @@ def generate_response():
         )
 
         response_text = completion.choices[0].message.content.strip()
-        print(f"OpenAI response: {response_text}")
+        print(f"OpenAI response received: {response_text}")
         return jsonify({"response": response_text})
 
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
+        print(f"Unexpected error in generate_response: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Server error: {str(e)}"}), 500
@@ -168,59 +175,68 @@ def process_journal():
             print("Error: No text provided")
             return jsonify({"error": "No text provided"}), 400
 
-        print(f"Input text: {text}")
+        print(f"Input text received: {text}")
 
         # Call OpenAI for grammar and improvement suggestions
         print("Calling OpenAI API...")
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": """You are a Spanish language teacher. 
-                Your task is to correct the student's text, improving grammar, word choice, and sentence structure.
-                Maintain the same meaning but make it sound more natural in Spanish.
-                Return ONLY a JSON object in this exact format:
+                {"role": "system", "content": """You are a Spanish language teacher correcting a student's journal entry.
+                Your task is to correct any grammar mistakes, improve word choices, and make the text sound more natural in Spanish.
+                
+                Rules:
+                1. Always maintain the original meaning
+                2. Fix any grammar errors
+                3. Improve word choices to sound more natural
+                4. Fix any accent marks or punctuation
+                
+                Return your response in this exact JSON format:
                 {
-                    "original": "<original text>",
-                    "corrected": "<corrected version>"
-                }
-                Do not include any other text or explanations."""},
+                    "original": "the original text",
+                    "corrected": "the corrected version with all improvements",
+                    "changes": [
+                        {
+                            "original": "original phrase or word",
+                            "corrected": "corrected phrase or word",
+                            "explanation": "explanation in English of why this change was made"
+                        }
+                    ]
+                }"""},
                 {"role": "user", "content": text}
             ],
             max_tokens=500,
-            temperature=0.7
+            temperature=0.3
         )
 
         suggestions = completion.choices[0].message.content.strip()
-        print(f"OpenAI raw response: {suggestions}")
+        print(f"OpenAI raw response received: {suggestions}")
         
-        # Validate that the response is proper JSON
         try:
+            # First validate that it's proper JSON
             parsed_suggestions = json.loads(suggestions)
-            print(f"Parsed suggestions: {parsed_suggestions}")
+            print(f"Successfully parsed suggestions: {parsed_suggestions}")
             
+            # Validate the structure
             if not isinstance(parsed_suggestions, dict):
-                print("Error: Response is not a dictionary")
-                raise ValueError("Invalid response format - not a dictionary")
-                
+                raise ValueError("Response is not a dictionary")
             if 'original' not in parsed_suggestions:
-                print("Error: No 'original' field in response")
-                raise ValueError("Invalid response format - missing 'original'")
-                
+                raise ValueError("Missing 'original' field")
             if 'corrected' not in parsed_suggestions:
-                print("Error: No 'corrected' field in response")
-                raise ValueError("Invalid response format - missing 'corrected'")
+                raise ValueError("Missing 'corrected' field")
             
+            # If we get here, the response is valid
             print("Validation successful, returning suggestions")
-            return jsonify({"suggestions": suggestions})
+            response_data = {"suggestions": suggestions}
+            print(f"Sending response: {response_data}")
+            return jsonify(response_data)
             
-        except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")
-            # If the response isn't valid JSON, try to format it
+        except Exception as e:
+            print(f"Error processing OpenAI response: {str(e)}")
             formatted_response = {
                 "original": text,
-                "corrected": "Error: Could not process corrections. Please try again."
+                "corrected": f"Error processing corrections: {str(e)}"
             }
-            print(f"Returning formatted error response: {formatted_response}")
             return jsonify({"suggestions": json.dumps(formatted_response)})
 
     except Exception as e:

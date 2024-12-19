@@ -119,4 +119,55 @@ video {
 
 video.recording {
   margin-bottom: 20px;
+}
+
+.highlighted-correction {
+  background-color: #fff3cd;
+  padding: 0 2px;
+  border-radius: 3px;
+  cursor: help;
+  transition: background-color 0.2s;
+}
+
+.highlighted-correction:hover {
+  background-color: #ffe69c;
+}
+
+.changes-explanation {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.changes-explanation h4 {
+  margin-bottom: 15px;
+  color: #666;
+}
+
+.changes-explanation ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.changes-explanation li {
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.change-original {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.change-corrected {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.change-explanation {
+  display: block;
+  color: #666;
+  font-style: italic;
+  margin-top: 5px;
+  padding-left: 20px;
 } 
