@@ -101,18 +101,23 @@ const GrammarWorksheet = () => {
               {worksheetData.exercises.map((exercise, index) => (
                 <div key={index} className="exercise-item">
                   <p className="exercise-sentence">
-                    {exercise.sentence.replace('___', 
-                      <input
-                        type="text"
-                        value={userAnswers[index] || ''}
-                        onChange={(e) => handleAnswerChange(index, e.target.value)}
-                        className={showAnswers ? 
-                          (userAnswers[index]?.toLowerCase() === exercise.answer.toLowerCase() 
-                            ? 'correct' 
-                            : 'incorrect') 
-                          : ''}
-                      />
-                    )}
+                    {exercise.sentence.split('___').map((part, i, arr) => (
+                      <React.Fragment key={i}>
+                        {part}
+                        {i < arr.length - 1 && (
+                          <input
+                            type="text"
+                            value={userAnswers[index] || ''}
+                            onChange={(e) => handleAnswerChange(index, e.target.value)}
+                            className={showAnswers ? 
+                              (userAnswers[index]?.toLowerCase() === exercise.answer.toLowerCase() 
+                                ? 'correct' 
+                                : 'incorrect') 
+                              : ''}
+                          />
+                        )}
+                      </React.Fragment>
+                    ))}
                   </p>
                   {showAnswers && (
                     <div className="answer-feedback">
@@ -120,7 +125,7 @@ const GrammarWorksheet = () => {
                         Correct answer: {exercise.answer}
                       </p>
                       <p className="answer-explanation">
-                        {exercise.explanation}
+                        <strong>{exercise.tense}</strong>: {exercise.explanation}
                       </p>
                     </div>
                   )}
