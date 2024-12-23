@@ -4,6 +4,8 @@ import Navbar from "./components/Navbar";
 import JournalEntry from './components/JournalEntry';
 import GrammarWorksheet from './components/GrammarWorksheet';
 import VocabularyGenerator from './components/VocabularyGenerator';
+import SavedWords from './components/SavedWords';
+import './components/SavedWords.css';
 
 const App = () => {
   const [recording, setRecording] = useState(false);
@@ -159,35 +161,57 @@ const App = () => {
     }
   };
 
+  const handleHighlightSave = async (selectedText) => {
+    try {
+      // Request English translation from the backend
+      const translationResponse = await fetch("http://localhost:5000/api/translate", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({ 
+          word: selectedText,
+          to_english: true // always translate to English for highlights
+        }),
+      });
+
+      if (!translationResponse.ok) {
+        throw new Error('Translation failed');
+      }
+
+      const translationData = await translationResponse.json();
+      
+      // Save the highlight
+      const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
+      
+      // Check if word already exists
+      if (!savedHighlights.some(entry => entry.word === selectedText)) {
+        const newEntry = { 
+          word: selectedText,
+          translation: translationData.translation
+        };
+        savedHighlights.push(newEntry);
+        localStorage.setItem("highlights", JSON.stringify(savedHighlights));
+      }
+
+      // Clear the selection and exit highlight mode
+      window.getSelection().removeAllRanges();
+      setIsHighlighting(false);
+      document.body.classList.remove('highlighting');
+
+    } catch (error) {
+      console.error("Error saving highlight:", error);
+      alert("Failed to save highlighted word. Please try again.");
+    }
+  };
+
   const handleMouseUp = async () => {
     if (!isHighlighting) return;
 
     const selectedText = window.getSelection().toString().trim();
     if (selectedText) {
-      try {
-        // Request English translation from the backend
-        const translationResponse = await fetch("/api/translate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ word: selectedText }),
-        });
-
-        const translationData = await translationResponse.json();
-        const englishTranslation = translationData.translation;
-
-        // Save the highlight
-        const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
-        const newEntry = { word: selectedText, translation: englishTranslation };
-        savedHighlights.push(newEntry);
-        localStorage.setItem("highlights", JSON.stringify(savedHighlights));
-
-        // Clear the selection and exit highlight mode
-        window.getSelection().removeAllRanges();
-        setIsHighlighting(false);
-        document.body.classList.remove('highlighting');
-      } catch (error) {
-        console.error("Error saving highlight:", error);
-      }
+      await handleHighlightSave(selectedText);
     }
   };
 
@@ -196,29 +220,6 @@ const App = () => {
     if (isHighlighting) {
       e.preventDefault(); // Prevents default text selection behavior
     }
-  };
-
-  const renderSavedWords = () => {
-    const savedHighlights = JSON.parse(localStorage.getItem("highlights")) || [];
-    if (savedHighlights.length === 0) {
-      return <p className="saved-words-text">No saved words or phrases.</p>;
-    }
-
-    return (
-      <ul className="saved-words-list">
-        {savedHighlights.map((entry, index) => (
-          <li key={index} className="saved-words-item">
-            {entry.word} - {entry.translation}{" "}
-            <button
-              className="delete-button"
-              onClick={() => handleDeleteHighlight(entry.word)}
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
-    );
   };
 
   const handleDeleteHighlight = (word) => {
@@ -290,10 +291,7 @@ const App = () => {
           )}
         </div>
       ) : view === "saved" ? (
-        <div>
-          <h2>Saved Words</h2>
-          {renderSavedWords()}
-        </div>
+        <SavedWords />
       ) : view === "journal" ? (
         <JournalEntry />
       ) : view === "worksheet" ? (

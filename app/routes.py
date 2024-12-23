@@ -8,6 +8,7 @@ from google.cloud import speech_v1p1beta1 as speech
 from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
+from langdetect import detect
 
 load_dotenv()
 
@@ -144,25 +145,42 @@ def text_to_speech():
 
 @main.route("/api/translate", methods=["POST"])
 def translate():
-    data = request.get_json()
-    word = data["word"]
-
     try:
-        # Updated OpenAI API call
-        completion = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a translation assistant. Provide only the translation of the given Spanish word into English, without any additional context, formatting, or punctuation."},
-                {"role": "user", "content": f'Translate "{word}" into English.'},
-            ],
-            max_tokens=10,
-        )
+        data = request.get_json()
+        if not data or 'word' not in data:
+            return jsonify({'error': 'No word provided'}), 400
+            
+        word = data.get('word')
+        to_english = data.get('to_english', True)
+        
+        try:
+            # Use OpenAI for translation
+            if to_english:
+                system_prompt = "You are a translation assistant. Provide only the translation of the given Spanish word into English, without any additional context, formatting, or punctuation."
+                user_prompt = f'Translate "{word}" into English.'
+            else:
+                system_prompt = "You are a translation assistant. Provide only the translation of the given English word into Spanish, without any additional context, formatting, or punctuation."
+                user_prompt = f'Translate "{word}" into Spanish.'
 
-        translation = completion.choices[0].message.content.strip()
-        return jsonify({"translation": translation})
+            completion = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                max_tokens=10,
+            )
+
+            translation = completion.choices[0].message.content.strip()
+            return jsonify({'translation': translation})
+            
+        except Exception as e:
+            print(f"Translation error: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+
     except Exception as e:
-        print(f"Translation error: {str(e)}")
-        return jsonify({"error": f"Translation error: {str(e)}"}), 500
+        print(f"Request error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @main.route("/api/process-journal", methods=["POST"])
 def process_journal():
@@ -300,21 +318,31 @@ def generate_vocabulary():
         is_random = data.get("isRandom", False)
         
         if is_random:
-            prompt = """Generate a list of 10 random Spanish vocabulary words. 
-            Include a mix of nouns, verbs, and adjectives. Format as JSON:
+            prompt = """Generate a list of 10 Spanish vocabulary words with a mix of difficulty levels:
+            - 3 beginner level words (common, everyday vocabulary)
+            - 4 intermediate level words (more complex terms)
+            - 3 advanced level words (sophisticated/academic vocabulary)
+            
+            Format as JSON:
             {
                 "words": [
                     {
                         "spanish": "word",
                         "english": "translation",
-                        "type": "noun/verb/adjective",
-                        "example": "example sentence in Spanish",
-                        "example_translation": "example translation in English"
+                        "type": "noun/verb/adjective/adverb",
+                        "example": "contextual example sentence in Spanish",
+                        "example_translation": "example translation in English",
+                        "level": "beginner/intermediate/advanced",
+                        "usage_notes": "brief note about context and common usage"
                     }
                 ]
             }"""
         else:
-            prompt = f"""Generate a list of 10 Spanish vocabulary words related to '{topic}'.
+            prompt = f"""Generate a list of 10 Spanish vocabulary words related to '{topic}' with a mix of difficulty levels:
+            - 3 beginner level words (common, everyday vocabulary)
+            - 4 intermediate level words (more complex terms)
+            - 3 advanced level words (sophisticated/academic vocabulary)
+            
             Format as JSON:
             {{
                 "topic": "{topic}",
@@ -322,9 +350,11 @@ def generate_vocabulary():
                     {{
                         "spanish": "word",
                         "english": "translation",
-                        "type": "noun/verb/adjective",
-                        "example": "example sentence in Spanish",
-                        "example_translation": "example translation in English"
+                        "type": "noun/verb/adjective/adverb",
+                        "example": "contextual example sentence in Spanish",
+                        "example_translation": "example translation in English",
+                        "level": "beginner/intermediate/advanced",
+                        "usage_notes": "brief note about context and common usage"
                     }}
                 ]
             }}"""
@@ -332,7 +362,10 @@ def generate_vocabulary():
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a Spanish language teacher providing vocabulary lists."},
+                {"role": "system", "content": """You are a Spanish language teacher who teaches at all levels.
+                For beginner words: focus on common, everyday vocabulary that a tourist might use.
+                For intermediate words: include more complex terms and some idiomatic expressions.
+                For advanced words: include academic terminology, literary words, and sophisticated expressions."""},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=1000,
@@ -345,4 +378,18 @@ def generate_vocabulary():
     except Exception as e:
         print(f"Vocabulary generation error: {str(e)}")
         return jsonify({"error": f"Vocabulary generation failed: {str(e)}"}), 500
+
+@main.route('/api/detect-language', methods=['POST'])
+def detect_language():
+    try:
+        data = request.get_json()
+        if not data or 'text' not in data:
+            return jsonify({'error': 'No text provided'}), 400
+            
+        text = data.get('text', '')
+        language = detect(text)
+        return jsonify({'language': language})
+    except Exception as e:
+        print(f"Language detection error: {str(e)}")
+        return jsonify({'language': 'es'})  # default to Spanish if detection fails
 

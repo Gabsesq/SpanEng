@@ -1,0 +1,151 @@
+.saved-words-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #4b483a;
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+.add-button {
+  padding: 12px 24px;
+  background-color: #4b483a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.add-button:hover {
+  background-color: #615e50;
+}
+
+.add-button:active {
+  transform: translateY(1px);
+}
+
+.saved-words-list {
+  margin-top: 24px;
+}
+
+.saved-words-list h2 {
+  color: #4b483a;
+  margin-bottom: 16px;
+  font-size: 24px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 8px;
+}
+
+.saved-words-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.saved-words-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  margin: 8px 0;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #4b483a;
+  transition: all 0.2s ease;
+}
+
+.saved-words-list li:hover {
+  background-color: #f0f0f0;
+  transform: translateX(4px);
+}
+
+.word-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  font-size: 16px;
+}
+
+.word-entry strong {
+  color: #4b483a;
+  min-width: 120px;
+  font-size: 18px;
+}
+
+.remove-button {
+  background: none;
+  border: none;
+  color: #dc3545;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.remove-button:hover {
+  opacity: 1;
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Empty state styling */
+.saved-words-list p {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 24px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .saved-words-container {
+    padding: 16px;
+  }
+
+  .search-form {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .add-button {
+    width: 100%;
+  }
+
+  .word-entry strong {
+    min-width: 100px;
+  }
+}
