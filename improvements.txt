@@ -2,3 +2,4 @@
 -gamify... maybe add a 3d growing person?
 -progress bar of some sort?
 -maybe some sort of social media race w prize?
+-3d cats or dogs that walk around based on user's usage

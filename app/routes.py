@@ -18,10 +18,17 @@ main = Blueprint("main", __name__)
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Set up Google Cloud credentials
-credentials_path = os.path.join(os.path.dirname(__file__), "..", "spaneng-b52a55f79d90.json")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
-print(f"Using Google credentials from: {credentials_path}")
+# Get credentials from environment variable
+google_credentials = os.getenv('GOOGLE_CREDENTIALS')
+if google_credentials:
+    # Create a temporary credentials file
+    credentials_dict = json.loads(google_credentials)
+    temp_credentials_path = os.path.join(os.path.dirname(__file__), "temp_credentials.json")
+    with open(temp_credentials_path, "w") as f:
+        json.dump(credentials_dict, f)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_credentials_path
+else:
+    print("Warning: GOOGLE_CREDENTIALS environment variable not found")
 
 @main.route("/api/speech-to-text", methods=["POST"])
 def speech_to_text():
