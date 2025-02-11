@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, send_from_directory
+from flask import Blueprint, request, jsonify, send_from_directory, current_app
 import os
 import base64
 import json
@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
 from langdetect import detect
+from google.oauth2 import service_account
 
 load_dotenv()
 
@@ -122,8 +123,10 @@ def text_to_speech():
         
         print(f"Attempting TTS for text: {text}")
 
-        # Initialize with service account
-        client = texttospeech.TextToSpeechClient()
+        # Initialize with credentials from environment variable
+        credentials_dict = json.loads(os.getenv('GOOGLE_CREDENTIALS'))
+        credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+        client = texttospeech.TextToSpeechClient(credentials=credentials)
 
         input_text = texttospeech.SynthesisInput(text=text)
         voice = texttospeech.VoiceSelectionParams(
@@ -399,4 +402,12 @@ def detect_language():
     except Exception as e:
         print(f"Language detection error: {str(e)}")
         return jsonify({'language': 'es'})  # default to Spanish if detection fails
+
+@main.route('/')
+def serve():
+    return send_from_directory(current_app.static_folder, 'index.html')
+
+@main.route('/<path:path>')
+def static_proxy(path):
+    return send_from_directory(current_app.static_folder, path)
 

@@ -12,7 +12,10 @@ def create_app():
     # Configure CORS
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:3000"],
+            "origins": [
+                "http://localhost:3000",
+                "https://immense-harbor-33068-c51d1d2f7257.herokuapp.com"
+            ],
             "methods": ["GET", "POST", "OPTIONS"],
             "allow_headers": ["Content-Type", "Accept"]
         }
