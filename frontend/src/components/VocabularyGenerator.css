@@ -32,12 +32,12 @@
 }
 
 .generate-button {
-  background-color: #4CAF50;
+  background-color: #ff4444;
   color: white;
 }
 
 .random-button {
-  background-color: #2196F3;
+  background-color: #ff4444;
   color: white;
   width: 100%;
 }
@@ -96,7 +96,7 @@
 .spanish-word {
   font-size: 1.2em;
   font-weight: bold;
-  color: #2196F3;
+  color: #ff4444;
 }
 
 .word-type {
@@ -104,7 +104,7 @@
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.8em;
-  color: #1976d2;
+  color: #ff4444;
 }
 
 .english-translation {
